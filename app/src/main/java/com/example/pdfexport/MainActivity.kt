@@ -1,6 +1,8 @@
 package com.example.pdfexport
 
+import android.annotation.SuppressLint
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
@@ -17,7 +19,6 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.Random
 import kotlin.math.floor
-import kotlin.math.round
 
 
 class MainActivity : AppCompatActivity() {
@@ -25,13 +26,18 @@ class MainActivity : AppCompatActivity() {
     private val temperatures = ArrayList<Float>()
     private val dates = ArrayList<String>()
     private val cellHeight = 40f
-    private val cellWidth = 70f
-    private val maxTemp = 37.5
-    private val minTemp = 35.2
-    private val stepTemp = 0.1
-    private val pageHeight = 1050
-    private val padding = 10f
-    private val pageWidth = 1200
+    private val maxTemp = 3750
+    private val minTemp = 3520
+    private val stepTemp = 10
+    private val paddingOutside = 20f
+    private val pageWidth = 2300
+    private var dayCount = 30
+    private val titleWidth = 72f
+    private val cellWidth = (pageWidth - paddingOutside * 2 - titleWidth * 2) / dayCount
+    private val temperatureCount = ((maxTemp - minTemp) / stepTemp + 1)
+    private val rowCount = temperatureCount + 11
+    private var pageHeight = (paddingOutside * 2 + rowCount * cellHeight).toInt()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -60,7 +66,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createAppDirectoryInDownloads(): File? {
-        val downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val downloadsDirectory =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val appDirectory = File(downloadsDirectory, "PDF")
 
         if (!appDirectory.exists()) {
@@ -74,7 +81,7 @@ class MainActivity : AppCompatActivity() {
         return appDirectory
     }
 
-    private fun createPdf(){
+    private fun createPdf() {
         val downloadsDirectory = createAppDirectoryInDownloads()
         val fileName = "test.pdf"
         pdfDocument = PdfDocument()
@@ -96,19 +103,20 @@ class MainActivity : AppCompatActivity() {
 
             // Run on the UI thread to show toast
             runOnUiThread {
-                Toast.makeText(this@MainActivity, "PDF generated successfully!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "PDF generated successfully!", Toast.LENGTH_SHORT)
+                    .show()
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun drawYAxis(canvas: Canvas){
-        var temp = minTemp
-        var cellCount = ((maxTemp - minTemp) / stepTemp + 1) + //Total Cell for Temperature
-                1 //Date Label
-        var xOffset = 20f
-        var yOffset = (padding * 2 + cellCount * cellHeight).toFloat()
+    private fun drawYAxis(canvas: Canvas) {
+        var temp = maxTemp
+        val startXOffset = paddingOutside
+        val endXOffset = pageWidth - paddingOutside - titleWidth
+        var yOffset = (paddingOutside + cellHeight * 0.5).toFloat()
+
         val boldPaint = Paint()
         boldPaint.textSize = 16f
         boldPaint.typeface = Typeface.DEFAULT_BOLD
@@ -116,31 +124,175 @@ class MainActivity : AppCompatActivity() {
         val normalPaint = Paint()
         normalPaint.textSize = 14f
 
-        canvas.drawText("Date", xOffset + 5, yOffset + cellHeight, normalPaint)
+        val borderPaint = Paint()
+        borderPaint.style = Paint.Style.STROKE
+        borderPaint.color = Color.parseColor("#C2C2C2")
 
-        while(temp < maxTemp + 0.1){
-            temp = temp.toBigDecimal().setScale(1, RoundingMode.HALF_EVEN).toDouble()
-            val decimalNumber = ((temp * 100).toInt() - (floor(temp) * 100)).toInt()
-            if(decimalNumber % 50 == 0){
-                canvas.drawText(String.format("%.2f", temp), xOffset, yOffset, boldPaint)
-            }else{
-                canvas.drawText(".${decimalNumber}", xOffset + 20, yOffset, normalPaint)
+        val linePaint = Paint()
+        linePaint.color = Color.parseColor("#EFEFEF")
+        linePaint.style = Paint.Style.STROKE
+        linePaint.strokeWidth = 2f
+
+        while (temp > minTemp - 0.1) {
+            val decimalNumber = temp % 100
+            if (decimalNumber % 50 == 0) {
+                canvas.drawLine(startXOffset + titleWidth, yOffset, endXOffset, yOffset, linePaint)
             }
-            yOffset-=cellHeight
-            temp +=stepTemp
+            // Draw Left Title
+            canvas.drawLine(startXOffset, yOffset, startXOffset + 8, yOffset, borderPaint)
+            if (decimalNumber % 50 == 0) {
+                canvas.drawText(
+                    String.format("%.2f", temp / 100f),
+                    startXOffset + 14,
+                    yOffset + 6,
+                    boldPaint
+                )
+            } else {
+                canvas.drawText(".${decimalNumber}", startXOffset + 38, yOffset + 4, normalPaint)
+            }
+            canvas.drawLine(
+                startXOffset + titleWidth - 8,
+                yOffset,
+                startXOffset + titleWidth,
+                yOffset,
+                borderPaint
+            )
+
+            // Draw Right Title
+            canvas.drawLine(endXOffset, yOffset, endXOffset + 8, yOffset, borderPaint)
+            if (decimalNumber % 50 == 0) {
+                canvas.drawText(
+                    String.format("%.2f", temp / 100f),
+                    endXOffset + 14,
+                    yOffset + 6,
+                    boldPaint
+                )
+            } else {
+                canvas.drawText(".${decimalNumber}", endXOffset + 38, yOffset + 4, normalPaint)
+            }
+            canvas.drawLine(
+                endXOffset + titleWidth - 8,
+                yOffset,
+                endXOffset + titleWidth,
+                yOffset,
+                borderPaint
+            )
+
+            // Draw Middle Title
+            if (decimalNumber % 50 == 0) {
+                canvas.drawText(
+                    String.format("%.2f", temp / 100f),
+                    pageWidth/ 2f,
+                    yOffset + 6,
+                    boldPaint
+                )
+            } else {
+                canvas.drawText(".${decimalNumber}", pageWidth/ 2f + 24, yOffset + 4, normalPaint)
+            }
+
+            yOffset += cellHeight
+            temp = (temp - stepTemp.toDouble()).toInt()
         }
-        canvas.drawLine(xOffset + 50, 40F, xOffset + 50, (padding * 2 + cellCount * cellHeight + cellHeight).toFloat(), normalPaint)
+        yOffset -= cellHeight * 0.5f
+        linePaint.color = Color.parseColor("#D4D4D4")
+        canvas.drawLine(startXOffset, yOffset, endXOffset + titleWidth, yOffset, linePaint)
+
+        yOffset += cellHeight * 3
+        canvas.drawLine(startXOffset, yOffset, endXOffset + titleWidth, yOffset, linePaint)
+    }
+
+    private fun drawBorder(canvas: Canvas) {
+        val left = 20f
+        val top = 20f
+        val bottom = pageHeight - 20f
+        val right = pageWidth - 20f
+        val paint = Paint();
+        paint.style = Paint.Style.STROKE
+        paint.color = Color.parseColor("#C2C2C2")
+        paint.strokeWidth = 1.5f
+        canvas.drawRect(left, top, right, bottom, paint)
+    }
+
+    private fun drawBackground(canvas: Canvas) {
+        val startXOffset = paddingOutside + titleWidth
+        val endXOffset = pageWidth - paddingOutside - titleWidth
+        val startYOffset = paddingOutside
+        val endYOffset = pageHeight - paddingOutside
+
+        val greyPaint = Paint()
+        greyPaint.color = Color.parseColor("#0D000000")
+        greyPaint.style = Paint.Style.FILL
+        val whitePaint = Paint()
+        whitePaint.color = Color.parseColor("#FFFFFF")
+        whitePaint.style = Paint.Style.FILL
+        val borderPaint = Paint()
+        borderPaint.color = Color.parseColor("#F1F1F1")
+        borderPaint.style = Paint.Style.STROKE
+
+        for (i in temperatureCount + 2 until rowCount - 1) {
+            if (i % 2 == 0) {
+                canvas.drawRect(
+                    startXOffset - titleWidth,
+                    startYOffset + (i + 1f) * cellHeight,
+                    endXOffset + titleWidth,
+                    startYOffset + (i + 2f) * cellHeight,
+                    greyPaint
+                )
+            }
+        }
+
+        for (i in 0 until  dayCount) {
+            canvas.drawRect(
+                startXOffset + i * cellWidth,
+                startYOffset,
+                startXOffset + (i + 1) * cellWidth,
+                endYOffset,
+                if (i % 2 == 0) greyPaint else whitePaint
+            )
+        }
+
+        for (i in 0 .. dayCount) {
+            canvas.drawRect(
+                startXOffset + i * cellWidth,
+                startYOffset,
+                startXOffset + (i + 1) * cellWidth,
+                endYOffset,
+                borderPaint
+            )
+        }
+
+        for (i in 0 until rowCount) {
+            canvas.drawRect(
+                startXOffset - if (i >= temperatureCount) titleWidth else 0f,
+                startYOffset + (i + if (i >= temperatureCount) 1f else 0.5f) * cellHeight,
+                endXOffset + if (i >= temperatureCount) titleWidth else 0f,
+                startYOffset + (i + if (i >= temperatureCount) 1f else 0.5f) * cellHeight,
+                borderPaint
+            )
+        }
+
+        borderPaint.style = Paint.Style.STROKE
+        borderPaint.color = Color.parseColor("#C2C2C2")
+        borderPaint.strokeWidth = 1.5f
+        canvas.drawRect(paddingOutside + titleWidth, paddingOutside, pageWidth - paddingOutside - titleWidth, pageHeight - paddingOutside, borderPaint)
     }
 
     private fun drawGraph(canvas: Canvas) {
         val width = canvas.width
         val height = canvas.height
 
-        val xScale = width.toFloat() / temperatures.size
-        val yScale = height / (37.5f - 35.2f)
+//        val xScale = width.toFloat() / temperatures.size
+//        val yScale = height / (37.5f - 35.2f)
+//
+//        val xOffset = 20f
+//        val yOffset = height - 20f
 
-        val xOffset = 20f
-        val yOffset = height - 20f
+        // Draw background
+        drawBackground(canvas)
+
+        // Draw border
+        drawBorder(canvas)
+
 
         // Draw x-axis
 //        canvas.drawLine(xOffset, yOffset, width.toFloat(), yOffset, Paint())
