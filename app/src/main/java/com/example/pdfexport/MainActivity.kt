@@ -116,6 +116,7 @@ class MainActivity : AppCompatActivity() {
         val startXOffset = paddingOutside
         val endXOffset = pageWidth - paddingOutside - titleWidth
         var yOffset = (paddingOutside + cellHeight * 0.5).toFloat()
+        val middleXOffset = pageWidth / 2 + 6f
 
         val boldPaint = Paint()
         boldPaint.textSize = 16f
@@ -182,12 +183,12 @@ class MainActivity : AppCompatActivity() {
             if (decimalNumber % 50 == 0) {
                 canvas.drawText(
                     String.format("%.2f", temp / 100f),
-                    pageWidth/ 2f,
+                    middleXOffset,
                     yOffset + 6,
                     boldPaint
                 )
             } else {
-                canvas.drawText(".${decimalNumber}", pageWidth/ 2f + 24, yOffset + 4, normalPaint)
+                canvas.drawText(".${decimalNumber}", middleXOffset + 20, yOffset + 4, normalPaint)
             }
 
             yOffset += cellHeight
@@ -226,7 +227,7 @@ class MainActivity : AppCompatActivity() {
         whitePaint.color = Color.parseColor("#FFFFFF")
         whitePaint.style = Paint.Style.FILL
         val borderPaint = Paint()
-        borderPaint.color = Color.parseColor("#F1F1F1")
+        borderPaint.color = Color.parseColor("#D4D4D4")
         borderPaint.style = Paint.Style.STROKE
 
         for (i in temperatureCount + 2 until rowCount - 1) {
@@ -277,6 +278,16 @@ class MainActivity : AppCompatActivity() {
         canvas.drawRect(paddingOutside + titleWidth, paddingOutside, pageWidth - paddingOutside - titleWidth, pageHeight - paddingOutside, borderPaint)
     }
 
+    private fun drawDate(canvas: Canvas){
+        val textPaint = Paint()
+        textPaint.textSize = 14f
+        val xOffset = paddingOutside + titleWidth
+        val yOffset = paddingOutside + temperatureCount * cellHeight + cellHeight * 1.5f + 5f
+        for (i in 0 until dayCount){
+            canvas.drawText((i + 1).toString(), xOffset + (i + 0.5f) * cellWidth - if(i > 9) 8f else 4f, yOffset, textPaint,)
+        }
+    }
+
     private fun drawGraph(canvas: Canvas) {
         val width = canvas.width
         val height = canvas.height
@@ -299,6 +310,9 @@ class MainActivity : AppCompatActivity() {
 
         // Draw y-axis
         drawYAxis(canvas)
+
+        // Draw Date
+        drawDate(canvas)
 
         // Draw temperature points
 //        for (i in temperatures.indices) {
