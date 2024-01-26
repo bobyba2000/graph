@@ -23,12 +23,13 @@ class MainActivity : AppCompatActivity() {
     private val temperatures = ArrayList<Float>()
     private val dates = ArrayList<String>()
     private val cellHeight = 40f
-    private val maxTemp = 3750
-    private val minTemp = 3520
-    private val stepTemp = 10
+    private val maxTemp = 4200
+    private val minTemp = 3200
+    private val stepTemp = 50
     private val paddingOutside = 20f
     private val pageWidth = 2300
     private var dayCount = 30
+    private val highlightStep = 100
     private val titleWidth = 72f
     private val cellWidth = (pageWidth - paddingOutside * 2 - titleWidth * 2) / dayCount
     private val temperatureCount = ((maxTemp - minTemp) / stepTemp + 1)
@@ -132,13 +133,13 @@ class MainActivity : AppCompatActivity() {
         linePaint.strokeWidth = 2f
 
         while (temp > minTemp - 0.1) {
-            val decimalNumber = temp % 100
-            if (decimalNumber % 50 == 0) {
+            val decimalNumber = temp % highlightStep
+            if (decimalNumber % highlightStep == 0) {
                 canvas.drawLine(startXOffset + titleWidth, yOffset, endXOffset, yOffset, linePaint)
             }
             // Draw Left Title
             canvas.drawLine(startXOffset, yOffset, startXOffset + 8, yOffset, borderPaint)
-            if (decimalNumber % 50 == 0) {
+            if (decimalNumber % highlightStep == 0) {
                 canvas.drawText(
                     String.format("%.2f", temp / 100f),
                     startXOffset + 14,
@@ -158,7 +159,7 @@ class MainActivity : AppCompatActivity() {
 
             // Draw Right Title
             canvas.drawLine(endXOffset, yOffset, endXOffset + 8, yOffset, borderPaint)
-            if (decimalNumber % 50 == 0) {
+            if (decimalNumber % highlightStep == 0) {
                 canvas.drawText(
                     String.format("%.2f", temp / 100f),
                     endXOffset + 14,
@@ -177,7 +178,7 @@ class MainActivity : AppCompatActivity() {
             )
 
             // Draw Middle Title
-            if (decimalNumber % 50 == 0) {
+            if (decimalNumber % highlightStep == 0) {
                 canvas.drawText(
                     String.format("%.2f", temp / 100f),
                     middleXOffset,
