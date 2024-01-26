@@ -1,6 +1,5 @@
 package com.example.pdfexport
 
-import android.annotation.SuppressLint
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -13,12 +12,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.io.File
 import java.io.FileOutputStream
-import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.Random
-import kotlin.math.floor
 
 
 class MainActivity : AppCompatActivity() {
@@ -207,7 +204,7 @@ class MainActivity : AppCompatActivity() {
         val top = 20f
         val bottom = pageHeight - 20f
         val right = pageWidth - 20f
-        val paint = Paint();
+        val paint = Paint()
         paint.style = Paint.Style.STROKE
         paint.color = Color.parseColor("#C2C2C2")
         paint.strokeWidth = 1.5f
@@ -288,25 +285,36 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun drawGraph(canvas: Canvas) {
-        val width = canvas.width
-        val height = canvas.height
+    private fun drawTemperature(canvas: Canvas){
+        var previousXOffset:Float? = null
+        var previousYOffset: Float? = null
+        val xOffset = paddingOutside + titleWidth
+        val minYOffset = paddingOutside + cellHeight * 0.5f
+        val maxYOffset = minYOffset + (temperatureCount - 1) * cellHeight
+        val paint = Paint()
+        paint.color = Color.parseColor("#23D0B9")
+        paint.style = Paint.Style.FILL_AND_STROKE
+        paint.strokeWidth = 1.5f
 
-//        val xScale = width.toFloat() / temperatures.size
-//        val yScale = height / (37.5f - 35.2f)
-//
-//        val xOffset = 20f
-//        val yOffset = height - 20f
+        for (i in 0 until dayCount){
+            val temperature = temperatures[i]
+            val yOffset = (maxTemp - temperature * 100f) * (maxYOffset - minYOffset) / (maxTemp - minTemp) + minYOffset
+            canvas.drawCircle(xOffset + (i + 0.5f) * cellWidth, yOffset, 5f, paint)
+            if(previousXOffset!=null && previousYOffset!=null){
+                canvas.drawLine(previousXOffset, previousYOffset, xOffset + (i + 0.5f) * cellWidth, yOffset, paint)
+            }
+            previousXOffset = xOffset + (i + 0.5f)*cellWidth
+            previousYOffset = yOffset
+        }
+    }
+
+    private fun drawGraph(canvas: Canvas) {
 
         // Draw background
         drawBackground(canvas)
 
         // Draw border
         drawBorder(canvas)
-
-
-        // Draw x-axis
-//        canvas.drawLine(xOffset, yOffset, width.toFloat(), yOffset, Paint())
 
         // Draw y-axis
         drawYAxis(canvas)
@@ -315,19 +323,6 @@ class MainActivity : AppCompatActivity() {
         drawDate(canvas)
 
         // Draw temperature points
-//        for (i in temperatures.indices) {
-//            val x = xOffset + i * xScale
-//            val y = yOffset - (temperatures[i] - 35.2f) * yScale
-//
-//            canvas.drawCircle(x, y, 5f, Paint())
-//        }
-
-        // Draw dates on x-axis
-//        for (i in dates.indices) {
-//            val x = xOffset + i * xScale
-//            val y = yOffset + 15f
-//
-//            canvas.drawText(dates[i], x, y, Paint())
-//        }
+        drawTemperature(canvas)
     }
 }
